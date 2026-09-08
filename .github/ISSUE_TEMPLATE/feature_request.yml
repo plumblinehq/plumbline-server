@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a change to the server, API, or scheduler
+title: "[feat]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New conformance checks belong in `plumbline-checks` and are pulled in
+        here as a version bump of that package — never reimplemented.
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve for anchor operators, wallets, or users?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What should the server do differently? Which endpoint or scheduler behaviour changes?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true for this to count as done? (Migration, tests, API shape, docs.)
