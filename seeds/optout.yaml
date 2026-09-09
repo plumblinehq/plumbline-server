@@ -1,0 +1,4 @@
+# Anchors that asked not to be scanned, with the note kept for the audit
+# trail. Politeness is a hard boundary: any anchor that asks to be removed
+# is removed. An entry here always wins over anchors.yaml.
+optouts: []

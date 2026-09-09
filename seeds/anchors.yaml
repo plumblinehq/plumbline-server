@@ -1,0 +1,9 @@
+# The seed anchor list. Every entry records where it came from; every entry
+# was reviewed by hand before the first scan. Additions here are code review:
+# a domain lands only after its stellar.toml resolves and it is genuinely an
+# anchor. Opt-outs live in optout.yaml, never here.
+anchors:
+  - homeDomain: testanchor.stellar.org
+    network: testnet
+    displayName: SDF Test Anchor
+    source: stellar.org developers docs (SDF-operated test anchor)
