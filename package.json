@@ -1,0 +1,52 @@
+{
+  "name": "@plumblinehq/plumbline-server",
+  "version": "0.1.0",
+  "description": "Scheduler, Postgres store and HTTP API for Plumbline, the Stellar anchor conformance directory. Reads @plumblinehq/plumbline-checks; contains no check logic.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "stellar",
+    "anchor",
+    "sep",
+    "conformance",
+    "monitoring"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "tsx src/migrate.ts",
+    "scan": "tsx src/scan.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plumblinehq/plumbline-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/plumblinehq/plumbline-server/issues"
+  },
+  "homepage": "https://github.com/plumblinehq/plumbline-server#readme",
+  "dependencies": {
+    "@plumblinehq/plumbline-checks": "github:plumblinehq/plumbline-checks#v0.2.2",
+    "fastify": "^5.12.3",
+    "postgres": "^3.4.9",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.5.0",
+    "eslint": "^10.10.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.0"
+  }
+}
