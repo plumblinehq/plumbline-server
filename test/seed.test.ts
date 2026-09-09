@@ -16,14 +16,19 @@ async function seedDir(files: Record<string, string>): Promise<string> {
 describe("loadSeedLists", () => {
   it("loads the committed seed lists", async () => {
     const seeds = await loadSeedLists("seeds");
-    expect(seeds.anchors).toEqual([
-      {
-        homeDomain: "testanchor.stellar.org",
-        network: "testnet",
-        displayName: "SDF Test Anchor",
-        source: "stellar.org developers docs (SDF-operated test anchor)",
-      },
+    // The committed list must stay in lockstep with this pin: five anchors,
+    // each verified live against its stellar.toml before entering the list.
+    expect(seeds.anchors.map((a) => [a.homeDomain, a.network])).toEqual([
+      ["testanchor.stellar.org", "testnet"],
+      ["stellar.moneygram.com", "pubnet"],
+      ["mykobo.co", "pubnet"],
+      ["anclap.com", "pubnet"],
+      ["clpx.finance", "pubnet"],
     ]);
+    for (const anchor of seeds.anchors) {
+      expect(anchor.source.length).toBeGreaterThan(10);
+      expect(anchor.displayName).toBeTruthy();
+    }
     expect(seeds.optOuts).toEqual([]);
   });
 

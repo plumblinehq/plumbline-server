@@ -1,9 +1,26 @@
 # The seed anchor list. Every entry records where it came from; every entry
-# was reviewed by hand before the first scan. Additions here are code review:
-# a domain lands only after its stellar.toml resolves and it is genuinely an
-# anchor. Opt-outs live in optout.yaml, never here.
+# was verified by hand before the first scan: its stellar.toml resolves and it
+# declares SEP-1 anchor fields (SIGNING_KEY plus WEB_AUTH/TRANSFER endpoints).
+# Additions here are code review: a domain lands only after that verification.
+# Opt-outs live in optout.yaml, never here.
 anchors:
   - homeDomain: testanchor.stellar.org
     network: testnet
     displayName: SDF Test Anchor
-    source: stellar.org developers docs (SDF-operated test anchor)
+    source: SDF developers docs (SDF-operated reference anchor; also the Stage 2 CLI checkpoint target)
+  - homeDomain: stellar.moneygram.com
+    network: pubnet
+    displayName: MoneyGram Access
+    source: SDF anchor directory (https://anchors.stellar.org), toml fetched and endpoints verified 2026-09-09
+  - homeDomain: mykobo.co
+    network: pubnet
+    displayName: Mykobo
+    source: SDF anchor directory (https://anchors.stellar.org), toml fetched and endpoints verified 2026-09-09
+  - homeDomain: anclap.com
+    network: pubnet
+    displayName: Anclap
+    source: SDF anchor directory (https://anchors.stellar.org), toml fetched and endpoints verified 2026-09-09
+  - homeDomain: clpx.finance
+    network: pubnet
+    displayName: Clpx
+    source: SDF anchor directory (https://anchors.stellar.org), toml fetched and endpoints verified 2026-09-09
