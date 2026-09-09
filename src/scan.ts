@@ -14,6 +14,12 @@ const store = new Store(config.databaseUrl);
 const scanner = new Scanner(store, config);
 
 try {
+  // Migrations run before anything touches the tables — on a fresh database
+  // the seed upserts would otherwise hit nonexistent relations.
+  const applied = await runMigrations(store.sql);
+  if (applied > 0) {
+    console.log(`migrations applied: ${applied}`);
+  }
   const seeds = await loadSeedLists();
   const optedOut = new Set(seeds.optOuts.map((o) => o.homeDomain));
   for (const anchor of seeds.anchors) {
@@ -26,10 +32,6 @@ try {
       network: anchor.network,
       displayName: anchor.displayName,
     });
-  }
-  const applied = await runMigrations(store.sql);
-  if (applied > 0) {
-    console.log(`migrations applied: ${applied}`);
   }
   const outcomes = await scanner.scanOnce();
   const complete = outcomes.filter((o) => o.status === "complete").length;
