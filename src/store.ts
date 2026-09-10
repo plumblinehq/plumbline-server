@@ -496,6 +496,20 @@ export class Store {
   }
 
   /**
+   * Mark every still-`running` run as `aborted`. A run is only ever in
+   * flight inside one process; at boot nothing of ours is scanning, so any
+   * `running` row is a crash or a kill left behind — an orphaned run and an
+   * aborted run must look the same, not like a run that is still going.
+   * Returns the number of runs recovered.
+   */
+  async recoverOrphanedRuns(): Promise<number> {
+    const rows = await this.#sql`
+        UPDATE runs SET status = 'aborted', finished_at = now()
+        WHERE status = 'running' RETURNING id`;
+    return rows.length;
+  }
+
+  /**
    * Whether the same regression was already detected within the cooldown
    * window, for webhook suppression. `beforeRunId` excludes the run that
    * just recorded it, so the alert fires for a fresh transition and stays

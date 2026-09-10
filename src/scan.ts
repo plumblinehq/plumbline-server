@@ -20,6 +20,10 @@ try {
   if (applied > 0) {
     console.log(`migrations applied: ${applied}`);
   }
+  const recovered = await store.recoverOrphanedRuns();
+  if (recovered > 0) {
+    console.log(`recovered ${recovered} orphaned run(s)`);
+  }
   const seeds = await loadSeedLists();
   const optedOut = new Set(seeds.optOuts.map((o) => o.homeDomain));
   for (const anchor of seeds.anchors) {

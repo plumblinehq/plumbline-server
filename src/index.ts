@@ -24,6 +24,12 @@ try {
   if (applied > 0) {
     console.log(`migrations applied: ${applied}`);
   }
+  // A crash or a kill mid-scan leaves a dangling `running` row; nothing of
+  // ours is scanning yet at boot, so recover them before the first pass.
+  const recovered = await store.recoverOrphanedRuns();
+  if (recovered > 0) {
+    console.log(`recovered ${recovered} orphaned run(s)`);
+  }
   scanner.startScheduler();
   await app.listen({ host: config.host, port: config.port });
   console.log(`plumbline-server listening on http://${config.host}:${config.port}`);
