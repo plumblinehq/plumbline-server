@@ -16,6 +16,20 @@ export interface Config {
   scanConcurrency: number;
   /** A run exceeding this is marked aborted. Default 10 minutes. */
   runTimeoutSeconds: number;
+  /** Port the HTTP API listens on. Default 3000. */
+  port: number;
+  /** Interface to bind. Default 0.0.0.0. */
+  host: string;
+  /** Max requests per IP per rate-limit window on the API. Default 300. */
+  rateLimitMax: number;
+  /** Rate-limit window in seconds. Default 60. */
+  rateLimitWindowSeconds: number;
+  /** Optional generic webhook URL for regression alerts; unset means no alerts. */
+  regressionWebhookUrl: string | undefined;
+  /** Seconds to suppress repeat alerts for the same regression. Default 24h. */
+  alertCooldownSeconds: number;
+  /** Trust X-Forwarded-For when the API sits behind a reverse proxy. Default false. */
+  trustProxy: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -50,11 +64,45 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
     return value;
   };
+  const optionalUrl = (name: string): string | undefined => {
+    const raw = env[name];
+    if (raw === undefined || raw === "") {
+      return undefined;
+    }
+    // Fail fast on a typo rather than silently never alerting: a webhook
+    // that is not a URL is a misconfiguration, not an absent one.
+    try {
+      new URL(raw);
+    } catch {
+      throw new Error(`${name} must be a valid URL, got "${raw}"`);
+    }
+    return raw;
+  };
+  const boolean = (name: string, fallback: boolean): boolean => {
+    const raw = env[name];
+    if (raw === undefined || raw === "") {
+      return fallback;
+    }
+    if (raw === "true" || raw === "1") {
+      return true;
+    }
+    if (raw === "false" || raw === "0") {
+      return false;
+    }
+    throw new Error(`${name} must be "true" or "false", got "${raw}"`);
+  };
   return {
     databaseUrl: required("DATABASE_URL"),
     scanIntervalSeconds: integer("SCAN_INTERVAL", 6 * 60 * 60),
     scanJitterFraction: fraction("SCAN_JITTER", 0.2),
     scanConcurrency: integer("SCAN_CONCURRENCY", 4),
     runTimeoutSeconds: integer("RUN_TIMEOUT", 600),
+    port: integer("PORT", 3000),
+    host: env.HOST === undefined || env.HOST === "" ? "0.0.0.0" : env.HOST,
+    rateLimitMax: integer("RATE_LIMIT_MAX", 300),
+    rateLimitWindowSeconds: integer("RATE_LIMIT_WINDOW", 60),
+    regressionWebhookUrl: optionalUrl("REGRESSION_WEBHOOK_URL"),
+    alertCooldownSeconds: integer("ALERT_COOLDOWN", 24 * 60 * 60),
+    trustProxy: boolean("TRUST_PROXY", false),
   };
 }
