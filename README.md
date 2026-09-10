@@ -1,7 +1,9 @@
 # plumbline-server
 
 Scheduler, Postgres store and HTTP API for [Plumbline](https://github.com/plumblinehq),
-the Stellar anchor conformance directory. It runs the checks from
+the Stellar anchor conformance directory. **A live instance runs at
+<https://plumbline-server.onrender.com>** — the public API the directory's web
+front end consumes. It runs the checks from
 [`@plumblinehq/plumbline-checks`](https://github.com/plumblinehq/plumbline-checks)
 on a schedule, stores every result, and computes grades and regressions. It
 contains no check logic: if a check needs fixing it gets fixed upstream and
@@ -60,7 +62,7 @@ release tag.
 
 ```json
 "dependencies": {
-  "@plumblinehq/plumbline-checks": "github:plumblinehq/plumbline-checks#v0.2.2"
+  "@plumblinehq/plumbline-checks": "github:plumblinehq/plumbline-checks#v0.2.3"
 }
 ```
 
@@ -118,6 +120,15 @@ Six tables, migrated forward-only from `migrations/`: `anchors`, `assets`,
 grade change across runs could mean the anchor broke or that Plumbline
 changed; without that column every historical comparison would be
 untrustworthy.
+
+## Deployment
+
+The reference deployment is a Render free-tier web service built from the
+committed `render.yaml` blueprint (region Ohio, matching the Neon Postgres it
+reads) with `DATABASE_URL` set in the dashboard. Migrations apply at boot; the
+in-process scheduler scans while the service is awake. The free plan spins the
+service down after 15 minutes of inactivity — an accepted property of the free
+tier, documented in the blueprint rather than worked around.
 
 ## License
 
