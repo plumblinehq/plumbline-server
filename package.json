@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/plumblinehq/plumbline-server#readme",
   "dependencies": {
-    "@plumblinehq/plumbline-checks": "github:plumblinehq/plumbline-checks#v0.2.2",
+    "@plumblinehq/plumbline-checks": "github:plumblinehq/plumbline-checks#v0.2.3",
     "fastify": "^5.12.3",
     "postgres": "^3.4.9",
     "yaml": "^2.9.0"
