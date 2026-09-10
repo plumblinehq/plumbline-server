@@ -1,5 +1,6 @@
 import {
   RateLimitedHttpClient,
+  VERSION,
   consoleLogger,
   run,
   type Env,
@@ -11,6 +12,7 @@ import type { Config } from "./config.js";
 import { detectRegressions, type Regression } from "./regressions.js";
 import { scoreRun, type Scores } from "./scoring.js";
 import type { Store } from "./store.js";
+import type { RegressionNotifier, RegressionNotification } from "./webhook.js";
 
 /**
  * The scanner, per plumbline-architecture.md §6.2: every enabled anchor is
@@ -35,11 +37,18 @@ export class Scanner {
   readonly #config: Config;
   readonly #http: RateLimitedHttpClient;
   readonly #logger: Logger;
+  readonly #notify: RegressionNotifier;
 
-  constructor(store: Store, config: Config, logger: Logger = consoleLogger) {
+  constructor(
+    store: Store,
+    config: Config,
+    logger: Logger = consoleLogger,
+    notify: RegressionNotifier = () => undefined,
+  ) {
     this.#store = store;
     this.#config = config;
     this.#logger = logger;
+    this.#notify = notify;
     // One client for the whole process: its per-host gates serialise requests
     // per anchor host no matter how many runs are in flight.
     this.#http = new RateLimitedHttpClient({ logger });
@@ -84,6 +93,15 @@ export class Scanner {
       const previous = await this.#store.previousRunResults(anchorId);
       const regressions = detectRegressions(previous, results);
       await this.#store.recordRegressions({ anchorId, runId, regressions });
+      await this.#emitRegressions({
+        anchorId,
+        homeDomain,
+        network: input.network,
+        runId,
+        regressions,
+        results,
+        scores,
+      });
       this.#logger.info(
         `scan ${homeDomain}: run ${runId} complete, score ${scores.overall.toFixed(3)}, ${regressions.length} regression(s)`,
       );
@@ -94,6 +112,57 @@ export class Scanner {
         `scan ${homeDomain}: run ${runId} aborted — ${cause instanceof Error ? cause.message : String(cause)}`,
       );
       return { anchorId, homeDomain, runId, status: "aborted", results: [], scores: undefined, regressions: [] };
+    }
+  }
+
+  /**
+   * Emit webhook alerts for regressions, suppressing repeats of the same
+   * regression within ALERT_COOLDOWN: the first pass → fail transition alerts,
+   * and the alert stays quiet while the anchor stays broken rather than
+   * paging on every six-hour scan. Every regression is still recorded in the
+   * regressions table — suppression is about alerting, not bookkeeping.
+   */
+  async #emitRegressions(input: {
+    anchorId: string;
+    homeDomain: string;
+    network: string;
+    runId: string;
+    regressions: Regression[];
+    results: Result[];
+    scores: Scores;
+  }): Promise<void> {
+    if (input.regressions.length === 0) {
+      return;
+    }
+    const resultById = new Map(input.results.map((result) => [result.checkId, result]));
+    const fresh: RegressionNotification["regressions"] = [];
+    for (const regression of input.regressions) {
+      const suppressed = await this.#store.recentRegression(
+        input.anchorId,
+        regression.checkId,
+        this.#config.alertCooldownSeconds,
+        input.runId,
+      );
+      if (suppressed) {
+        continue;
+      }
+      const result = resultById.get(regression.checkId);
+      fresh.push({
+        checkId: regression.checkId,
+        title: result?.title ?? regression.checkId,
+        message: result?.message ?? "",
+        specRef: result?.specRef ?? "",
+      });
+    }
+    if (fresh.length > 0) {
+      this.#notify({
+        homeDomain: input.homeDomain,
+        network: input.network,
+        runId: input.runId,
+        checksLibVersion: VERSION,
+        overallScore: input.scores.overall,
+        regressions: fresh,
+      });
     }
   }
 
