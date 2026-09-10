@@ -68,11 +68,13 @@ jobs:
       # step to verify. "Build" here means the runtime program graph loads —
       # including the git-pinned checks package — and the entrypoints fail
       # fast with the missing-variable error instead of crashing deeper.
-      - run: npx tsx -e "Promise.all([import('./src/store.js'), import('./src/scanner.js'), import('./src/migrate.js')]).then(() => console.log('runtime imports OK'))"
+      - run: npx tsx -e "Promise.all([import('./src/store.js'), import('./src/scanner.js'), import('./src/server.js'), import('./src/migrate.js')]).then(() => console.log('runtime imports OK'))"
       - name: entrypoints fail fast without configuration
         run: |
-          if npx tsx src/migrate.ts >out.txt 2>err.txt; then
-            echo "expected migrate.ts to fail without DATABASE_URL"
-            exit 1
-          fi
-          grep -q "DATABASE_URL" err.txt
+          for entry in src/migrate.ts src/index.ts; do
+            if npx tsx "$entry" >out.txt 2>err.txt; then
+              echo "expected $entry to fail without DATABASE_URL"
+              exit 1
+            fi
+            grep -q "DATABASE_URL" err.txt
+          done
