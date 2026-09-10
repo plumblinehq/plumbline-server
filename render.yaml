@@ -7,16 +7,14 @@
 # accepted property of the free tier, not a misconfiguration — paid plans
 # stay always-on.
 #
-# Region: pick the Render region matching the Neon project's region
-# (frankfurt ↔ eu-central-1, oregon ↔ us-west-2, virginia/ohio ↔ us-east-1,
-# singapore ↔ ap-southeast-1). Free plan availability varies by region;
-# frankfurt and oregon are the usual free-tier regions.
+# Region matches the Neon project: the connection string's host is
+# ep-falling-union-axzczs0v-pooler.c-4.us-east-2.aws.neon.tech (Ohio).
 services:
   - type: web
     name: plumbline-server
     runtime: node
     plan: free
-    region: frankfurt
+    region: ohio
     buildCommand: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && npm ci
     startCommand: npm start
     healthCheckPath: /healthz
