@@ -1,0 +1,32 @@
+# Render Blueprint for plumbline-server. Create it from the dashboard:
+# "New +" → "Blueprint" → this repo, branch main. The only manual step is
+# DATABASE_URL (sync: false): paste the Neon connection string there.
+#
+# The free plan spins the service down after 15 minutes of inactivity; the
+# in-process scan scheduler only runs while the service is awake. That is an
+# accepted property of the free tier, not a misconfiguration — paid plans
+# stay always-on.
+#
+# Region: pick the Render region matching the Neon project's region
+# (frankfurt ↔ eu-central-1, oregon ↔ us-west-2, virginia/ohio ↔ us-east-1,
+# singapore ↔ ap-southeast-1). Free plan availability varies by region;
+# frankfurt and oregon are the usual free-tier regions.
+services:
+  - type: web
+    name: plumbline-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: git config --global url."https://github.com/".insteadOf "ssh://git@github.com/" && npm ci
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Behind Render's proxy, per-IP rate limiting needs X-Forwarded-For.
+      - key: TRUST_PROXY
+        value: "true"
+      # Set in the dashboard when creating the service: the Neon connection
+      # string. Never commit a database credential.
+      - key: DATABASE_URL
+        sync: false
