@@ -1,13 +1,14 @@
 # plumbline-server
 
-Scheduler, Postgres store and HTTP API for [Plumbline](https://github.com/plumblinehq),
+Postgres store and HTTP API for [Plumbline](https://github.com/plumblinehq),
 the Stellar anchor conformance directory. **A live instance runs at
 <https://plumbline-server.onrender.com>** — the public API the directory's web
-front end consumes. It runs the checks from
+front end consumes. A scheduled GitHub Actions workflow runs the checks from
 [`@plumblinehq/plumbline-checks`](https://github.com/plumblinehq/plumbline-checks)
-on a schedule, stores every result, and computes grades and regressions. It
-contains no check logic: if a check needs fixing it gets fixed upstream and
-pulled in as a tag bump — never reimplemented or special-cased here.
+against every anchor every 15 minutes; this service stores every result and
+computes grades and regressions. It contains no check logic: if a check needs
+fixing it gets fixed upstream and pulled in as a tag bump — never reimplemented
+or special-cased here.
 
 ## Relationship to SDF anchor-tests
 
@@ -15,7 +16,7 @@ The Stellar Development Foundation maintains
 [`@stellar/anchor-tests`](https://github.com/stellar-anchor-tests) and hosts it
 at anchor-validator.stellar.org; it is the right tool for an anchor operator
 testing their own anchor, including authenticated flows. Plumbline is a
-continuous, ecosystem-wide, read-only monitor and is never presented as a
+scheduled, ecosystem-wide, read-only monitor and is never presented as a
 replacement for it.
 
 ## Hard boundaries
@@ -40,8 +41,6 @@ These are guard conditions, not preferences:
 | Variable | Required | Default | Meaning |
 |---|---|---|---|
 | `DATABASE_URL` | yes | — | Postgres connection string |
-| `SCAN_INTERVAL` | no | `21600` | Seconds between scan passes per anchor |
-| `SCAN_JITTER` | no | `0.2` | ± fraction of the interval applied as jitter |
 | `SCAN_CONCURRENCY` | no | `4` | Anchors scanned concurrently |
 | `RUN_TIMEOUT` | no | `600` | Seconds before a run is marked `aborted` |
 | `PORT` | no | `3000` | Port the HTTP API listens on |
@@ -73,9 +72,9 @@ runner token first (see `.github/workflows/ci.yml`).
 ## Commands
 
 ```
-npm start            # the server: migrations, scheduler, HTTP API
+npm start            # the API server: migrations + HTTP API, no scanning
 npm run db:migrate   # apply pending migrations (requires DATABASE_URL)
-npm run scan         # one scan pass: seed lists, opt-outs, real rows
+npm run scan         # one scan pass; what the scheduled workflow runs
 npm test             # vitest
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint
@@ -121,14 +120,37 @@ grade change across runs could mean the anchor broke or that Plumbline
 changed; without that column every historical comparison would be
 untrustworthy.
 
+## Scanning schedule
+
+This service does not scan. `.github/workflows/scan.yml` runs `npm run scan`
+on a GitHub Actions schedule — **nominally every 15 minutes**. Two caveats,
+stated rather than glossed over:
+
+- GitHub queues scheduled workflows and may delay them under load, so the real
+  interval can be longer than 15 minutes.
+- GitHub disables scheduled workflows after 60 days without repository
+  activity.
+
+The workflow needs a `DATABASE_URL` repository secret. `npm run scan` holds a
+Postgres advisory lock for the duration of a pass, so a slow pass and the next
+scheduled run can never overlap: one request in flight per host is guaranteed
+within a scan, and the lock stops scans from stacking on top of each other.
+
+Decoupling the scan from the web service is deliberate. A scheduler inside the
+API server only ran while the host was awake, so on a free plan the recorded
+history thinned out to whenever someone happened to hit the API while the
+README still claimed a fixed interval. With the scan on its own schedule the
+API can sleep freely, and the recorded interval is the workflow's.
+
 ## Deployment
 
 The reference deployment is a Render free-tier web service built from the
 committed `render.yaml` blueprint (region Ohio, matching the Neon Postgres it
-reads) with `DATABASE_URL` set in the dashboard. Migrations apply at boot; the
-in-process scheduler scans while the service is awake. The free plan spins the
-service down after 15 minutes of inactivity — an accepted property of the free
-tier, documented in the blueprint rather than worked around.
+reads) with `DATABASE_URL` set in the dashboard. The service serves the API and
+applies migrations at boot; it does not scan. Render's free plan spins a web
+service down after 15 minutes of inactivity, which now costs the API a cold
+start and nothing else — scanning continues on its own schedule regardless of
+whether the API is awake.
 
 ## License
 

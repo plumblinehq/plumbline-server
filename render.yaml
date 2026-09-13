@@ -2,10 +2,11 @@
 # "New +" → "Blueprint" → this repo, branch main. The only manual step is
 # DATABASE_URL (sync: false): paste the Neon connection string there.
 #
-# The free plan spins the service down after 15 minutes of inactivity; the
-# in-process scan scheduler only runs while the service is awake. That is an
-# accepted property of the free tier, not a misconfiguration — paid plans
-# stay always-on.
+# This service is the API only — it does not scan. Scanning runs on a
+# schedule from .github/workflows/scan.yml, so the free plan spinning the
+# service down after 15 minutes of inactivity costs the API a cold start and
+# costs the scan nothing. The recorded interval is the workflow's, not
+# whenever someone happened to wake the host.
 #
 # Region matches the Neon project: the connection string's host is
 # ep-falling-union-axzczs0v-pooler.c-4.us-east-2.aws.neon.tech (Ohio).
