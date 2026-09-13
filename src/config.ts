@@ -8,10 +8,6 @@
 export interface Config {
   /** Postgres connection string, e.g. postgres://user:pass@host:5432/plumbline */
   databaseUrl: string;
-  /** Seconds between scheduled scans of the same anchor. Default 6h. */
-  scanIntervalSeconds: number;
-  /** ± fraction of SCAN_INTERVAL applied as scheduling jitter. Default 0.2. */
-  scanJitterFraction: number;
   /** Max anchors scanned concurrently. Default 4. */
   scanConcurrency: number;
   /** A run exceeding this is marked aborted. Default 10 minutes. */
@@ -53,17 +49,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     }
     return value;
   };
-  const fraction = (name: string, fallback: number): number => {
-    const raw = env[name];
-    if (raw === undefined || raw === "") {
-      return fallback;
-    }
-    const value = Number.parseFloat(raw);
-    if (!Number.isFinite(value) || value < 0 || value > 1) {
-      throw new Error(`${name} must be a number between 0 and 1, got "${raw}"`);
-    }
-    return value;
-  };
   const optionalUrl = (name: string): string | undefined => {
     const raw = env[name];
     if (raw === undefined || raw === "") {
@@ -93,8 +78,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   };
   return {
     databaseUrl: required("DATABASE_URL"),
-    scanIntervalSeconds: integer("SCAN_INTERVAL", 6 * 60 * 60),
-    scanJitterFraction: fraction("SCAN_JITTER", 0.2),
     scanConcurrency: integer("SCAN_CONCURRENCY", 4),
     runTimeoutSeconds: integer("RUN_TIMEOUT", 600),
     port: integer("PORT", 3000),

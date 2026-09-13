@@ -14,8 +14,6 @@ describe("loadConfig", () => {
     const config = loadConfig({ DATABASE_URL: "postgres://localhost/test" });
     expect(config).toMatchObject({
       databaseUrl: "postgres://localhost/test",
-      scanIntervalSeconds: 6 * 60 * 60,
-      scanJitterFraction: 0.2,
       scanConcurrency: 4,
       runTimeoutSeconds: 600,
       port: 3000,
@@ -66,6 +64,6 @@ describe("loadConfig", () => {
     const base = { DATABASE_URL: "postgres://localhost/test" };
     expect(() => loadConfig({ ...base, SCAN_CONCURRENCY: "four" })).toThrow(/SCAN_CONCURRENCY/);
     expect(() => loadConfig({ ...base, SCAN_CONCURRENCY: "0" })).toThrow(/SCAN_CONCURRENCY/);
-    expect(() => loadConfig({ ...base, SCAN_JITTER: "1.5" })).toThrow(/SCAN_JITTER/);
+    expect(() => loadConfig({ ...base, RUN_TIMEOUT: "-1" })).toThrow(/RUN_TIMEOUT/);
   });
 });

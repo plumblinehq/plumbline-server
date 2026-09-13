@@ -168,8 +168,8 @@ export class Scanner {
 
   /**
    * One pass over every enabled, non-opted-out anchor, running at most
-   * SCAN_CONCURRENCY scans at once. Used by the one-shot scan command and by
-   * the scheduler's tick.
+   * SCAN_CONCURRENCY scans at once. Each invocation of the scheduled scan
+   * command runs exactly one pass.
    */
   async scanOnce(): Promise<ScanOutcome[]> {
     const anchors = await this.#store.listAnchors({ enabledOnly: true });
@@ -196,37 +196,5 @@ export class Scanner {
     );
     await Promise.all(workers);
     return outcomes.sort((a, b) => (a.anchorId < b.anchorId ? -1 : 1));
-  }
-
-  /**
-   * The scheduler loop: scans everything once, then re-schedules each anchor
-   * independently at SCAN_INTERVAL with ±(SCAN_JITTER × SCAN_INTERVAL)
-   * jitter, per architecture §6.2. Independent timers keep one slow anchor
-   * from delaying everyone else.
-   */
-  startScheduler(): void {
-    const interval = this.#config.scanIntervalSeconds * 1000;
-    const jitter = this.#config.scanJitterFraction * interval;
-    void (async () => {
-      for (;;) {
-        const startedAt = Date.now();
-        // A failed pass — a database blip, or the first query racing a cold
-        // Neon connection on a free-tier wake — must not kill the loop for the
-        // life of the process. Log it, keep the cadence, try again next pass.
-        try {
-          await this.scanOnce();
-        } catch (cause) {
-          this.#logger.error(
-            `scan pass failed: ${cause instanceof Error ? cause.message : String(cause)}`,
-          );
-        }
-        const elapsed = Date.now() - startedAt;
-        const wait = Math.max(0, interval - elapsed) + (Math.random() * 2 - 1) * jitter;
-        this.#logger.info(
-          `scan pass finished in ${Math.round(elapsed / 1000)}s; next pass in ${Math.round(wait / 1000)}s`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, wait).unref());
-      }
-    })();
   }
 }
