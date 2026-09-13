@@ -210,7 +210,16 @@ export class Scanner {
     void (async () => {
       for (;;) {
         const startedAt = Date.now();
-        await this.scanOnce();
+        // A failed pass — a database blip, or the first query racing a cold
+        // Neon connection on a free-tier wake — must not kill the loop for the
+        // life of the process. Log it, keep the cadence, try again next pass.
+        try {
+          await this.scanOnce();
+        } catch (cause) {
+          this.#logger.error(
+            `scan pass failed: ${cause instanceof Error ? cause.message : String(cause)}`,
+          );
+        }
         const elapsed = Date.now() - startedAt;
         const wait = Math.max(0, interval - elapsed) + (Math.random() * 2 - 1) * jitter;
         this.#logger.info(
