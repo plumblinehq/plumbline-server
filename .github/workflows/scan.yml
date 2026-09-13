@@ -1,0 +1,45 @@
+name: Scan
+
+on:
+  schedule:
+    # Nominally every 15 minutes. GitHub queues scheduled runs and can delay
+    # them under load, so this is "about every 15 minutes" — the interval the
+    # README states, not a hard guarantee.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+# Never let two scans overlap. The checks package serialises requests per host
+# within a single process, so a second concurrent scan would put two requests
+# in flight against the same anchor, which the politeness boundary forbids.
+# `npm run scan` also takes a Postgres advisory lock, so even a run started
+# outside this workflow exits immediately rather than scanning concurrently.
+concurrency:
+  group: plumbline-scan
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # npm ci resolves the checks dependency by cloning github, and the
+      # lockfile records that as git+ssh; rewrite to the runner's token.
+      - run: git config --global url."https://x-access-token:${{ github.token }}@github.com/".insteadOf "ssh://git@github.com/"
+      - run: npm ci
+      # A missing DATABASE_URL secret fails here with the loader's
+      # missing-variable message rather than halfway through a scan.
+      - name: Scan
+        run: npm run scan
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Optional: regression alerts are opt-in, and an unset secret is an
+          # empty string, which the config loader treats as absent.
+          REGRESSION_WEBHOOK_URL: ${{ secrets.REGRESSION_WEBHOOK_URL }}

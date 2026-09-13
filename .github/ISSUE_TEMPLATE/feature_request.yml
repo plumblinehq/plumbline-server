@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose a change to the server, API, or scheduler
+description: Propose a change to the server, the scan job, or the API
 title: "[feat]: "
 labels: ["enhancement"]
 body:
@@ -19,7 +19,7 @@ body:
     id: proposal
     attributes:
       label: Proposed behaviour
-      description: What should the server do differently? Which endpoint or scheduler behaviour changes?
+      description: What should the server do differently? Which endpoint or scan behaviour changes?
     validations:
       required: true
   - type: textarea

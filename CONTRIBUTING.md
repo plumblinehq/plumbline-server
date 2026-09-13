@@ -5,11 +5,11 @@ Thanks for considering a contribution to Plumbline.
 Plumbline is three repositories in the `plumblinehq` org:
 
 - **plumbline-checks** — the SEP conformance checks, as a library and CLI
-- **plumbline-server** — scheduler, Postgres store, HTTP API
+- **plumbline-server** — Postgres store, HTTP API, the scheduled scan job
 - **plumbline-web** — the public directory
 
-This repo is `plumbline-server`: the scheduler, the Postgres store, the HTTP
-API and regression alerts. It contains **no check logic**. If a check needs
+This repo is `plumbline-server`: the Postgres store, the HTTP API, the
+scheduled scan job and regression alerts. It contains **no check logic**. If a check needs
 fixing, it gets fixed in `plumbline-checks` and pulled in as a version bump of
 that package — never reimplemented or special-cased here.
 
@@ -20,6 +20,9 @@ that package — never reimplemented or special-cased here.
   new version, bump the pin deliberately, in its own commit.
 - Plumbline is read-only against third-party anchors: only `GET`, `HEAD` and
   `OPTIONS` requests. Nothing in this repo ever issues a `POST` to an anchor.
+- Scanning runs on a schedule in `.github/workflows/scan.yml`, never inside the
+  web service: the API must be able to sleep without the recorded scan interval
+  becoming a lie.
 - One commit per logical unit, Conventional Commits style. A migration is one
   commit.
 - Never commit a red build. CI must be green on the default branch.

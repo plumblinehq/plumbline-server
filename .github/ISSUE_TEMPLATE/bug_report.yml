@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a bug in the server, scheduler, or API
+description: Report a bug in the server, the scan job, or the API
 title: "[bug]: "
 labels: ["bug"]
 body:

@@ -15,7 +15,7 @@ privately before any public disclosure.
 
 ## Scope
 
-- The scheduler, the HTTP API, the badge endpoint and the Postgres store
+- The scheduled scan job, the HTTP API, the badge endpoint and the Postgres store
 - Anything that parses untrusted input, notably evidence bodies persisted from
   third-party anchors
 
