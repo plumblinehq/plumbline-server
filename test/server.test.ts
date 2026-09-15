@@ -32,6 +32,7 @@ const anclapRow: AnchorScoreRow = {
   lastRunId: "10",
   lastRunAt: "2026-09-10T00:00:00.000Z",
   lastRunStatus: "complete",
+  lastRunErrorCount: 0,
   overallScore: 0.83,
   grades: [
     { sep: 1, score: 0.9, applicable: true },
@@ -185,6 +186,32 @@ describe("GET /api/anchors", () => {
     const response = await app.inject({ method: "GET", url: "/api/anchors" });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual([mykoboRow, anclapRow]);
+  });
+
+  it("exposes how many checks in the latest run errored, so a client can tell a fully-verified score from one that did not run everything", async () => {
+    const store = fakeStore({
+      listAnchorsWithScores: async () => [
+        { ...mykoboRow, lastRunErrorCount: 3 },
+      ],
+    });
+    const app = buildApp({ store, config: makeConfig() });
+    const response = await app.inject({ method: "GET", url: "/api/anchors" });
+    expect(response.statusCode).toBe(200);
+    const [row] = response.json() as [{ lastRunErrorCount: number }];
+    expect(row.lastRunErrorCount).toBe(3);
+  });
+
+  it("serialises lastRunErrorCount as null for an anchor with no run", async () => {
+    const store = fakeStore({
+      listAnchorsWithScores: async () => [
+        { ...mykoboRow, lastRunId: null, lastRunAt: null, lastRunStatus: null, lastRunErrorCount: null, overallScore: null, grades: [] },
+      ],
+    });
+    const app = buildApp({ store, config: makeConfig() });
+    const response = await app.inject({ method: "GET", url: "/api/anchors" });
+    expect(response.statusCode).toBe(200);
+    const [row] = response.json() as [{ lastRunErrorCount: number | null }];
+    expect(row.lastRunErrorCount).toBeNull();
   });
 
   it("passes the network, sep, min_score and sort filters to the store", async () => {
