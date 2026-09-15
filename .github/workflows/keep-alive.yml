@@ -1,0 +1,32 @@
+# The API runs on Render's free tier, which spins the service down after
+# roughly fifteen minutes without traffic. The first visitor after that gets
+# proxy 503s with no CORS headers, which every browser logs as red console
+# errors on an otherwise working page. This workflow touches the service
+# every ten minutes so a scan interval, not idleness, decides when a visitor
+# pays the cold-start cost.
+#
+# GitHub cron is best-effort and can be delayed a few minutes; a gap longer
+# than the spin-down window is possible and is accepted — the error panel on
+# the site already explains the cold start and offers a retry. GET /healthz
+# is exempt from the API's rate limit by design, so this can never crowd out
+# a real consumer.
+name: keep-alive
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep the free-tier API warm
+        run: |
+          code="$(curl -sS -o /dev/null -m 120 -w '%{http_code}' https://plumbline-server.onrender.com/healthz)"
+          echo "GET /healthz -> $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::health check returned $code"
+          fi
