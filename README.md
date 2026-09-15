@@ -45,7 +45,7 @@ These are guard conditions, not preferences:
 | `RUN_TIMEOUT` | no | `600` | Seconds before a run is marked `aborted` |
 | `PORT` | no | `3000` | Port the HTTP API listens on |
 | `HOST` | no | `0.0.0.0` | Interface to bind |
-| `RATE_LIMIT_MAX` | no | `300` | Requests per IP per window on the API |
+| `RATE_LIMIT_MAX` | no | `300` | Requests per IP per window on the API; `0` disables the limit (local dev) |
 | `RATE_LIMIT_WINDOW` | no | `60` | Rate-limit window in seconds |
 | `REGRESSION_WEBHOOK_URL` | no | — | Generic webhook (Discord/Slack/HTTP) receiving regression alerts; unset means no alerts |
 | `ALERT_COOLDOWN` | no | `86400` | Seconds to suppress repeat alerts for the same regression |

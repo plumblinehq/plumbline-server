@@ -16,7 +16,7 @@ export interface Config {
   port: number;
   /** Interface to bind. Default 0.0.0.0. */
   host: string;
-  /** Max requests per IP per rate-limit window on the API. Default 300. */
+  /** Max requests per IP per rate-limit window on the API. Default 300; `0` disables the limit. */
   rateLimitMax: number;
   /** Rate-limit window in seconds. Default 60. */
   rateLimitWindowSeconds: number;
@@ -46,6 +46,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     const value = Number.parseInt(raw, 10);
     if (!Number.isInteger(value) || value <= 0) {
       throw new Error(`${name} must be a positive integer, got "${raw}"`);
+    }
+    return value;
+  };
+  // Only for knobs where 0 is a meaningful "off" rather than a typo.
+  const nonNegativeInteger = (name: string, fallback: number): number => {
+    const raw = env[name];
+    if (raw === undefined || raw === "") {
+      return fallback;
+    }
+    const value = Number.parseInt(raw, 10);
+    if (!Number.isInteger(value) || value < 0) {
+      throw new Error(`${name} must be a non-negative integer, got "${raw}"`);
     }
     return value;
   };
@@ -82,7 +94,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     runTimeoutSeconds: integer("RUN_TIMEOUT", 600),
     port: integer("PORT", 3000),
     host: env.HOST === undefined || env.HOST === "" ? "0.0.0.0" : env.HOST,
-    rateLimitMax: integer("RATE_LIMIT_MAX", 300),
+    rateLimitMax: nonNegativeInteger("RATE_LIMIT_MAX", 300),
     rateLimitWindowSeconds: integer("RATE_LIMIT_WINDOW", 60),
     regressionWebhookUrl: optionalUrl("REGRESSION_WEBHOOK_URL"),
     alertCooldownSeconds: integer("ALERT_COOLDOWN", 24 * 60 * 60),

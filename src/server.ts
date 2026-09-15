@@ -55,6 +55,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
     options.config.rateLimitMax,
     options.config.rateLimitWindowSeconds * 1000,
   );
+  /**
+   * `RATE_LIMIT_MAX=0` disables inbound limiting entirely — a documented
+   * off switch for local development, not a limit of zero. The value is
+   * checked in the hook rather than only here so a config hot-reload path
+   * can never re-enable it silently.
+   */
 
   // --- cross-cutting: CORS -------------------------------------------------
   app.addHook("onRequest", async (request, reply) => {
@@ -77,7 +83,11 @@ export function buildApp(options: AppOptions): FastifyInstance {
   // --- cross-cutting: rate limiting ----------------------------------------
   const EXEMPT_FROM_RATE_LIMIT = new Set(["/healthz", "/readyz", "/metrics"]);
   app.addHook("onRequest", async (request, reply) => {
-    if (request.method === "OPTIONS" || EXEMPT_FROM_RATE_LIMIT.has(request.url.split("?")[0] ?? "")) {
+    if (
+      request.method === "OPTIONS" ||
+      EXEMPT_FROM_RATE_LIMIT.has(request.url.split("?")[0] ?? "") ||
+      options.config.rateLimitMax === 0
+    ) {
       return undefined;
     }
     const result = limiter.check(request.ip, Date.now());
