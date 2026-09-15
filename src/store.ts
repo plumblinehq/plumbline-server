@@ -36,6 +36,13 @@ export interface AnchorScoreRow {
   lastRunId: string | null;
   lastRunAt: string | null;
   lastRunStatus: "complete" | "aborted" | null;
+  /**
+   * How many checks in the latest run returned `error` — Plumbline's own
+   * failure, not the anchor's. Errored checks are excluded from the score
+   * rather than failed, so a client must be able to tell a fully-verified
+   * 100% from a 100% that never ran everything. Null when there is no run.
+   */
+  lastRunErrorCount: number | null;
   overallScore: number | null;
   grades: SepGrade[];
 }
@@ -285,10 +292,13 @@ export class Store {
       options.network === undefined ? this.#sql`` : this.#sql`AND a.network = ${options.network}`;
     const rows = await this.#sql`
         SELECT a.id, a.home_domain, a.network, a.display_name, a.opted_out,
-               r.id AS run_id, r.started_at, r.finished_at, r.overall_score, r.status
+               r.id AS run_id, r.started_at, r.finished_at, r.overall_score, r.status,
+               r.error_count
         FROM anchors a
         LEFT JOIN LATERAL (
-            SELECT id, started_at, finished_at, overall_score, status
+            SELECT id, started_at, finished_at, overall_score, status,
+                   (SELECT count(*) FROM check_results cr
+                    WHERE cr.run_id = runs.id AND cr.status = 'error') AS error_count
             FROM runs
             WHERE anchor_id = a.id AND status = 'complete'
             ORDER BY started_at DESC
@@ -322,6 +332,7 @@ export class Store {
       lastRunId: row.run_id,
       lastRunAt: row.started_at === null ? null : new Date(row.started_at).toISOString(),
       lastRunStatus: row.status === null ? null : row.status,
+      lastRunErrorCount: row.run_id === null ? null : Number(row.error_count ?? 0),
       overallScore: row.overall_score === null ? null : Number(row.overall_score),
       grades: row.run_id === null ? [] : (gradesByRun.get(row.run_id) ?? []),
     }));
