@@ -54,6 +54,17 @@ describe("loadConfig", () => {
     ).toThrow(/REGRESSION_WEBHOOK_URL/);
   });
 
+  it("accepts RATE_LIMIT_MAX=0 as the documented disable value", () => {
+    const config = loadConfig({ DATABASE_URL: "postgres://localhost/test", RATE_LIMIT_MAX: "0" });
+    expect(config.rateLimitMax).toBe(0);
+  });
+
+  it("rejects a negative RATE_LIMIT_MAX", () => {
+    expect(() =>
+      loadConfig({ DATABASE_URL: "postgres://localhost/test", RATE_LIMIT_MAX: "-1" }),
+    ).toThrow(/RATE_LIMIT_MAX/);
+  });
+
   it("rejects non-boolean TRUST_PROXY values", () => {
     expect(() => loadConfig({ DATABASE_URL: "postgres://localhost/test", TRUST_PROXY: "maybe" })).toThrow(
       /TRUST_PROXY/,

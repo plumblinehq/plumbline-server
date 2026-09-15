@@ -175,6 +175,14 @@ describe("rate limiting", () => {
     expect(second.statusCode).toBe(200);
     expect(metricsResponse.statusCode).toBe(200);
   });
+
+  it("disables the limit entirely when rateLimitMax is 0", async () => {
+    const app = buildApp({ store: fakeStore(), config: makeConfig({ rateLimitMax: 0 }) });
+    for (let i = 0; i < 5; i += 1) {
+      const response = await app.inject({ method: "GET", url: "/api/checks" });
+      expect(response.statusCode).toBe(200);
+    }
+  });
 });
 
 describe("GET /api/anchors", () => {
